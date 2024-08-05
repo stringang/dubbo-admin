@@ -13,17 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 FROM maven:3-openjdk-8
-RUN mkdir /source && wget https://github.com/apache/dubbo-admin/archive/0.6.0.zip && unzip -q 0.6.0.zip -d /source
-WORKDIR /source/dubbo-admin-0.6.0
+ARG VERSION
+ADD . /source/dubbo-admin
+WORKDIR /source/dubbo-admin
 COPY application.properties dubbo-admin-server/src/main/resources/application.properties
-RUN mvn --batch-mode clean package -Dmaven.test.skip=true
+RUN mvn --batch-mode clean package -Dmaven.test.skip=true -Drevision=${VERSION}
 
 FROM openjdk:8-jdk
+ARG VERSION
 LABEL maintainer="dev@dubbo.apache.org"
 RUN apt-get update && apt-get install -y tini
-COPY --from=0 /source/dubbo-admin-0.6.0/dubbo-admin-distribution/target/dubbo-admin-0.6.0.jar /app.jar
-COPY --from=0 /source/dubbo-admin-0.6.0/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+COPY --from=0 /source/dubbo-admin/dubbo-admin-distribution/target/dubbo-admin-${VERSION}.jar /app.jar
+COPY --from=0 /source/dubbo-admin/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENV JAVA_OPTS ""
 
